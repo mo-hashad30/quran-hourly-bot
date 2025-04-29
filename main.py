@@ -9,78 +9,100 @@ CHAT_ID = os.environ['CHAT_ID']
 
 #### --- Get Quran Verse --- ####
 def get_random_verse_and_tafsir():
-    """Fetches a random Quran verse, its info, and Tafsir Al-Muyassar."""
     try:
         random_verse_number = random.randint(1, 6236)
         print(f"Fetching global verse number: {random_verse_number}")
-        # Tafsir (Muyassar)
+        
+        # API request
         api_url = f"https://api.alquran.cloud/v1/ayah/{random_verse_number}/editions/quran-simple,ar.muyassar"
         response = requests.get(api_url)
-        response.raise_for_status(
-        )
+        response.raise_for_status()
         data = response.json()['data']
-        # Extract information
-        verse_text = ""
-        tafsir_text = ""
-        surah_number = 0
-        surah_name = ""
-        ayah_number_in_surah = 0
-        if data[0]['edition']['identifier'] == 'quran-simple':
-            verse_text = data[0]['text']
-            surah_number = data[0]['surah']['number']
-            surah_name = data[0]['surah']['name']
-            ayah_number_in_surah = data[0]['numberInSurah']
-        elif data[1]['edition']['identifier'] == 'quran-simple':
-            verse_text = data[1]['text']
-            surah_number = data[1]['surah']['number']
-            surah_name = data[1]['surah']['name']
-            ayah_number_in_surah = data[1]['numberInSurah']
+        
+        # Extract values
+        verse_text, tafsir_text = "", ""
+        surah_number = surah_name = ayah_number_in_surah = None
 
-        if data[0]['edition']['identifier'] == 'ar.muyassar':
-            tafsir_text = data[0]['text']
-        elif data[1]['edition']['identifier'] == 'ar.muyassar':
-            tafsir_text = data[1]['text']
+        for item in data:
+            if item['edition']['identifier'] == 'quran-simple':
+                verse_text = item['text']
+                surah_number = item['surah']['number']
+                surah_name = item['surah']['name']
+                ayah_number_in_surah = item['numberInSurah']
+            elif item['edition']['identifier'] == 'ar.muyassar':
+                tafsir_text = item['text']
 
         if not verse_text or not tafsir_text:
-            print("Error: Couldn't extract verse or tafsir from API response.")
-            return None 
+            print("Error: Missing verse or tafsir.")
+            return None
 
-        #### --- Message Format --- ####
-        message = f"""
-{verse_text}
+        # Base message format
+        link = f'<a href="https://quran.ksu.edu.sa/tafseer/katheer-saadi/sura{surah_number}-aya{ayah_number_in_surah}.html">📘 أكمل القراءة / تفسير ابن كثير</a>'
+        base = f"""﴿{verse_text}﴾
 
 📖 [{surah_name}، الآية: {ayah_number_in_surah}] (السورة {surah_number})
 
 -- التفسير الميسر --
-{tafsir_text}
 """
-        return message.strip()  # Remove leading/trailing whitespace
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from API: {e}")
-        return None
+        # Calculate remaining space for tafsir
+        max_length = 1024
+        remaining = max_length - len(base + link)
+
+        if len(tafsir_text) > remaining:
+            tafsir_text = tafsir_text[:remaining - 3] + "..."
+
+        message = base + tafsir_text + "\n\n" + link
+        return message.strip(), random_verse_number
+
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"Error: {e}")
         return None
 
-
-#### --- Send to Telegram --- ####
-def send_message_to_telegram(message_text):
-    """Sends the formatted message to the specified Telegram channel."""
-    telegram_api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+def send_audio_with_caption_to_telegram(verse_number, caption_text):
+    """Sends the audio verse with the tafsir as a caption."""
+    audio_url = f"https://cdn.islamic.network/quran/audio/192/ar.abdulbasitmurattal/{verse_number}.mp3"
+    telegram_api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendAudio"
     payload = {
         'chat_id': CHAT_ID,
-        'text': message_text,
-        'parse_mode':
-        'HTML'  
+        'audio': audio_url,
+        'caption': caption_text[:1024],  # Telegram caption limit
+        'parse_mode': 'HTML'
     }
     try:
         response = requests.post(telegram_api_url, data=payload)
-        response.raise_for_status() 
-        print("Message sent successfully to Telegram!")
+        response.raise_for_status()
+        print("Audio with caption sent successfully!")
         return True
     except requests.exceptions.RequestException as e:
-        print(f"Error sending message to Telegram: {e}")
+        print(f"Error sending audio with caption: {e}")
+        if e.response is not None:
+            print(f"Telegram response: {e.response.text}")
+        return False
+    except Exception as e:
+        print(f"An unexpected error occurred while sending audio: {e}")
+        return False
+
+#### --- Send to Telegram --- ####
+def send_message_to_telegram(message_text, verse_number):
+    """Sends the verse and tafsir as a caption along with audio to Telegram."""
+    telegram_api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendAudio"
+    audio_url = f"https://cdn.islamic.network/quran/audio/192/ar.abdulbasitmurattal/{verse_number}.mp3"
+
+    payload = {
+        'chat_id': CHAT_ID,
+        'audio': audio_url,
+        'caption': message_text,
+        'parse_mode': 'HTML'
+    }
+
+    try:
+        response = requests.post(telegram_api_url, data=payload)
+        response.raise_for_status()
+        print("Audio + caption sent successfully to Telegram!")
+        return True
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending audio to Telegram: {e}")
         if e.response is not None:
             print(f"Telegram response: {e.response.text}")
         return False
@@ -89,12 +111,14 @@ def send_message_to_telegram(message_text):
         return False
 
 
+
 #### --- Main --- ####
 def send_hourly_verse():
     print("Starting hourly task...")
-    verse_message = get_random_verse_and_tafsir()
-    if verse_message:
-        send_message_to_telegram(verse_message)
+    result = get_random_verse_and_tafsir()
+    if result:
+        verse_message, verse_number = result
+        send_message_to_telegram(verse_message, verse_number)
     else:
         print("Failed to get verse or tafsir, skipping send.")
     print("Hourly task finished.")

@@ -20,6 +20,8 @@ Abdul Basit – An-Naml, Ayah 69 (27:69).mp3 *playable*
 📘 أكمل القراءة / تفسير ابن كثير (https://quran.ksu.edu.sa/tafseer/katheer-saadi/sura27-aya69.html)
 ```
 
+For more samples, check my telegram channel running on this bot: https://t.me/quraan_hourly_30
+
 🎧 *With Abdul Basit recitation attached as audio.*
 
 ---

@@ -1,100 +1,120 @@
-Note that this readme file and some parts of the script were made using AI, since I'm a doctor, not a programmer. However if you find any issues with the code, feel free to reach out or submit one!
-# Telegram Qur'an Auto Bot
+## 📖 Quran Verse & Tafsir Notifier Bot
 
-[![Python Version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+This Python script sends a **random Quran verse**, its **Tafsir Al-Muyassar**, and a **Quranic recitation (audio)** to a Telegram chat/channel **every hour**, using a webhook trigger (e.g. via UptimeRobot). The message is sent as a **single Telegram audio message** with the verse and tafsir as a caption — to avoid spamming users with multiple messages.
 
-A Python script that fetches a random verse from the Quran, the tafseer of this verse, its number and the chapter, sends it as a single message to a specified Telegram chat, channel, or user. Designed to be run periodically (e.g., hourly) using a scheduler like Render with UptimeRobot.
+---
 
-## Features
+### 🔊 Example Output
 
-*   Fetches a random Quran verse number (1-6236).
-*   Retrieves verse text and metadata (Surah name, Ayah number) from `api.alquran.cloud`.
-*   Sends a **single message** to Telegram containing the verse text with tafseer.
-*   Uses the asynchronous `python-telegram-bot` library (v20+).
-*   Configured via environment variables for security (no hardcoded tokens).
-*   Includes basic logging for monitoring and debugging.
+A sample message received in Telegram:
 
-## Output Example
+```
+﴿وَاللَّهُ يُحِقُّ الْحَقَّ بِكَلِمَاتِهِ وَلَوْ كَرِهَ الْمُجْرِمُونَ﴾
 
-When run, the script will send a message to your configured Telegram chat like this:
-
-قَالُوا وَأَقْبَلُوا عَلَيْهِمْ مَاذَا تَفْقِدُونَ
-
-📖 [سُورَةُ يُوسُفَ، الآية: 71] (السورة 12)
+📖 [يونس، الآية: 82] (السورة 10)
 
 -- التفسير الميسر --
-قال أولاد يعقوب مقبلين على المنادي: ما الذي تفقدونه؟
+والله يثبت الحق بكلماته ووحيه، ولو كره المجرمون ظهوره وانتصاره.
 
-*(The specific verse will be random each time)*
+📘 أكمل القراءة / تفسير ابن كثير
+```
 
-## Prerequisites
+🎧 *With Abdul Basit recitation attached as audio.*
 
-*   Python 3.7+
-*   `pip` (Python package installer)
-*   A Telegram Account
-*   A Telegram Bot Token:
-    *   Create a bot by talking to the `@BotFather` on Telegram.
-    *   Follow the steps (`/newbot`) to get your unique API token.
-*   A Telegram Chat ID:
-    *   **Channel/Group:** Add your bot as an admin. Send a message in the channel/group, forward it to `@JsonDumpBot` or `@RawDataBot` on Telegram. The bot will reply with JSON data; find the `chat` -> `id` value (it usually starts with `-100...` for channels or `-` for groups).
-    *   **Private Chat:** Send a message to `@JsonDumpBot` or `@RawDataBot`. It will show your user ID in the `chat` -> `id` field.
-*   A hosting environment (like [Render](https://render.com/), Heroku, PythonAnywhere, VPS) or a local machine to run the script.
+---
 
-## Setup & Installation
+### ✨ Features
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
-    cd YOUR_REPOSITORY_NAME
-    ```
+- ✅ Sends a **single audio message** with caption (verse + tafsir)
+- ✅ Pulls **random ayah** every time (from any surah)
+- ✅ Uses [alquran.cloud](https://alquran.cloud) API for Quran and Tafsir
+- ✅ Audio from [Islamic.network CDN](https://cdn.islamic.network/quran/audio)
+- ✅ Includes a **link to Ibn Kathir tafsir** for deeper reading
+- ✅ Lightweight — works great with platforms like **UptimeRobot**
 
-2.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(This installs `python-telegram-bot` and `requests`)*
+---
 
-## Configuration
+### ⚙️ How it Works
 
-The script requires two environment variables to be set:
+1. A random verse (1–6236) is picked.
+2. Verse text and Tafsir Al-Muyassar are fetched via [alquran.cloud API](https://alquran.cloud).
+3. A corresponding recitation audio is built using:
+   ```
+   https://cdn.islamic.network/quran/audio/192/ar.abdulbasitmurattal/{verse_number}.mp3
+   ```
+4. A message is built with the verse, tafsir, and a link to Ibn Kathir’s tafsir on [quran.ksu.edu.sa](https://quran.ksu.edu.sa).
+5. The message is sent via Telegram **as a single audio post with caption**.
 
-*   `TELEGRAM_BOT_TOKEN`: Your Telegram bot's API token obtained from BotFather.
-*   `TELEGRAM_CHAT_ID`: The ID of the chat, channel, or user where the messages should be sent (including the leading `-` if applicable).
+---
 
-**How to set environment variables:**
+### 📦 Setup Instructions
 
-*   **On Render:** Go to your Service -> Environment settings and add the key-value pairs.
-*   **On Linux/macOS (Terminal):**
-    ```bash
-    export TELEGRAM_BOT_TOKEN="YOUR_ACTUAL_BOT_TOKEN"
-    export TELEGRAM_CHAT_ID="YOUR_ACTUAL_CHAT_ID"
-    ```
-*   **On Windows (Command Prompt):**
-    ```cmd
-    set TELEGRAM_BOT_TOKEN=YOUR_ACTUAL_BOT_TOKEN
-    set TELEGRAM_CHAT_ID=YOUR_ACTUAL_CHAT_ID
-    ```
-*   **On Windows (PowerShell):**
-    ```powershell
-    $env:TELEGRAM_BOT_TOKEN="YOUR_ACTUAL_BOT_TOKEN"
-    $env:TELEGRAM_CHAT_ID="YOUR_ACTUAL_CHAT_ID"
-    ```
-*   **Using a `.env` file (Recommended for local development):**
-    1.  Install `python-dotenv`: `pip install python-dotenv`
-    2.  Create a file named `.env` in the project root:
-        ```dotenv
-        TELEGRAM_BOT_TOKEN="YOUR_ACTUAL_BOT_TOKEN"
-        TELEGRAM_CHAT_ID="YOUR_ACTUAL_CHAT_ID"
-        ```
-    3.  Ensure `.env` is listed in your `.gitignore` file to avoid committing secrets.
-    4.  The provided script doesn't automatically load `.env`, you would need to add `from dotenv import load_dotenv; load_dotenv()` near the top of `send_quran_verse.py`.
+1. **Clone this repo**:
+   ```bash
+   git clone https://github.com/your-username/quran-hourly-bot.git
+   cd quran-hourly-bot
+   ```
 
-**Important:** Never commit your API token or Chat ID directly into your code or public repositories.
+2. **Install dependencies**:
+   ```bash
+   pip install requests
+   ```
 
-## Usage
+3. **Set your environment variables** (in `.env` or system env):
+   ```
+   BOT_TOKEN=your_telegram_bot_token
+   CHAT_ID=@your_channel_or_user_id
+   ```
 
-Once configured, you can run the script manually:
+4. **Run the script**:
+   ```bash
+   python main.py
+   ```
 
-```bash
-python send_quran_verse.py
+5. **Trigger via webhook (e.g. UptimeRobot)**:
+   - Deploy on a platform like **Render**, **Replit**, or **Glitch**
+   - Set the UptimeRobot monitor to ping `https://yourdomain.com/run` every hour
+
+---
+
+### 🧪 Test Manually
+
+You can test manually by visiting:
+
+```
+https://yourdomain.com/run
+```
+
+This will instantly trigger the sending of one verse and tafsir.
+
+---
+
+### 🛠 Technologies Used
+
+- Python 3
+- [AlQuran Cloud API](https://alquran.cloud)
+- [Islamic Network Audio API](https://cdn.islamic.network)
+- [Telegram Bot API](https://core.telegram.org/bots/api)
+- `requests`, `http.server`
+
+---
+
+### 📌 Customization
+
+- You can **replace the reciter** by changing the audio URL to another supported reciter.
+- The tafsir can be swapped to another translation if supported by [alquran.cloud](https://alquran.cloud/docs).
+- Truncation is applied automatically if the caption gets too long (>1024 characters).
+
+---
+
+### 🤲 Contributing
+
+Note that parts of this project as well as the readme you're currently reading is made by AI, since I'm a doctor, not a programmer.
+However, pull requests and improvements are welcome!  
+Feel free to fork and enhance — whether it's adding new features, fixing bugs, or supporting new languages/translations.
+
+---
+
+### 📜 License
+
+This project is open-source and free to use under the *I don't know, probably MIT, I didn't create the license file in this project :'( .

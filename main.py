@@ -17,7 +17,7 @@ def get_random_verse_and_tafsir():
             ("https://cdn.islamic.network/quran/audio/192/ar.abdulbasitmurattal/{verse_number}.mp3", "عبدالباسط عبدالصمد"),
             ("https://cdn.islamic.network/quran/audio/64/ar.alafasy/{verse_number}.mp3", "مشاري العفاسي"),
             ("https://cdn.islamic.network/quran/audio/128/ar.husary/{verse_number}.mp3", "محمود الحصري"),
-            ("https://cdn.islamic.network/quran/audio/128/ar.hudhaify/{verse_number}.mp3", "لي الحذيفي"),
+            ("https://cdn.islamic.network/quran/audio/128/ar.hudhaify/{verse_number}.mp3", "علي الحذيفي"),
             ("https://cdn.islamic.network/quran/audio/32/ar.ibrahimakhbar/{verse_number}.mp3", "إبراهيم الأخضر"),
             ("https://cdn.islamic.network/quran/audio/128/ar.muhammadayyoub/{verse_number}.mp3", "محمد أيوب"),
             ("https://cdn.islamic.network/quran/audio/64/ar.aymanswoaid/{verse_number}.mp3", "أيمن سويد")

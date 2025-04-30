@@ -8,26 +8,34 @@ import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 BOT_TOKEN = os.environ['BOT_TOKEN']
 CHAT_ID = os.environ['CHAT_ID']
-AUDIO_LINKS = [
-    "https://cdn.islamic.network/quran/audio/192/ar.abdullahbasfar/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/192/ar.abdulbasitmurattal/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/64/ar.alafasy/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/128/ar.husary/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/128/ar.hudhaify/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/32/ar.ibrahimakhbar/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/128/ar.muhammadayyoub/{verse_number}.mp3",
-    "https://cdn.islamic.network/quran/audio/64/ar.aymanswoaid/{verse_number}.mp3"
-]
 
 #### --- Get Quran Verse --- ####
 def get_random_verse_and_tafsir():
     try:
+        AUDIO_LINKS = [
+            ("https://cdn.islamic.network/quran/audio/192/ar.abdullahbasfar/{verse_number}.mp3", "عبدالله بصفر"),
+            ("https://cdn.islamic.network/quran/audio/192/ar.abdulbasitmurattal/{verse_number}.mp3", "عبدالباسط عبدالصمد"),
+            ("https://cdn.islamic.network/quran/audio/64/ar.alafasy/{verse_number}.mp3", "مشاري العفاسي"),
+            ("https://cdn.islamic.network/quran/audio/128/ar.husary/{verse_number}.mp3", "محمود الحصري"),
+            ("https://cdn.islamic.network/quran/audio/128/ar.hudhaify/{verse_number}.mp3", "لي الحذيفي"),
+            ("https://cdn.islamic.network/quran/audio/32/ar.ibrahimakhbar/{verse_number}.mp3", "إبراهيم الأخضر"),
+            ("https://cdn.islamic.network/quran/audio/128/ar.muhammadayyoub/{verse_number}.mp3", "محمد أيوب"),
+            ("https://cdn.islamic.network/quran/audio/64/ar.aymanswoaid/{verse_number}.mp3", "أيمن سويد")
+        ]
+        
+        # Choose reciter
+        audio_url_template, reciter_name = random.choice(AUDIO_LINKS)
+        
+        # Pick a verse
         random_verse_number = random.randint(1, 6236)
-        print(f"Fetching global verse number: {random_verse_number}")
+        print(f"Fetching verse #{random_verse_number} ({reciter_name})")
+
+        # Fetch text and tafsir
         api_url = f"https://api.alquran.cloud/v1/ayah/{random_verse_number}/editions/quran-simple,ar.muyassar"
         response = requests.get(api_url)
         response.raise_for_status()
         data = response.json()['data']
+        
         verse_text, tafsir_text = "", ""
         surah_number = surah_name = ayah_number_in_surah = None
 
@@ -43,13 +51,16 @@ def get_random_verse_and_tafsir():
         if not verse_text or not tafsir_text:
             print("Error: Missing verse or tafsir.")
             return None
+
         link = f'<a href="https://quran.ksu.edu.sa/tafseer/katheer-saadi/sura{surah_number}-aya{ayah_number_in_surah}.html">📘 أكمل القراءة / تفسير ابن كثير</a>'
+        
         base = f"""﴿{verse_text}﴾
 
-📖 [{surah_name}، الآية: {ayah_number_in_surah}] (السورة {surah_number})
+📖 [{surah_name}، الآية: {ayah_number_in_surah}] (السورة {surah_number}) — 🎙️ {reciter_name}
 
 -- التفسير الميسر --
 """
+
         max_length = 1024
         remaining = max_length - len(base + link)
 
@@ -57,18 +68,16 @@ def get_random_verse_and_tafsir():
             tafsir_text = tafsir_text[:remaining - 3] + "..."
 
         message = base + tafsir_text + "\n\n" + link
-        return message.strip(), random_verse_number
+        audio_url = audio_url_template.format(verse_number=random_verse_number)
+        return message.strip(), random_verse_number, audio_url
 
     except Exception as e:
         print(f"Error: {e}")
         return None
 
 #### --- Send to Telegram --- ####
-def send_message_to_telegram(message_text, verse_number):
-    """Sends the verse and tafsir as a caption along with audio to Telegram."""
+def send_message_to_telegram(message_text, verse_number, audio_url):
     telegram_api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendAudio"
-    audio_url_template = random.choice(AUDIO_LINKS)
-    audio_url = audio_url_template.format(verse_number=verse_number)
     payload = {
         'chat_id': CHAT_ID,
         'audio': audio_url,
@@ -89,8 +98,6 @@ def send_message_to_telegram(message_text, verse_number):
     except Exception as e:
         print(f"An unexpected error occurred while sending: {e}")
         return False
-
-
 
 #### --- Main --- ####
 class RequestHandler(BaseHTTPRequestHandler):
@@ -138,11 +145,12 @@ def send_hourly_verse():
     print("Starting hourly task...")
     result = get_random_verse_and_tafsir()
     if result:
-        verse_message, verse_number = result
-        send_message_to_telegram(verse_message, verse_number)
+        verse_message, verse_number, audio_url = result
+        send_message_to_telegram(verse_message, verse_number, audio_url)
     else:
         print("Failed to get verse or tafsir, skipping send.")
     print("Hourly task finished.")
+
 
 #### --- Web Server --- ####
 def wait_and_send_forever():

@@ -1,0 +1,32 @@
+name: Send hourly Quran verse
+
+on:
+  schedule:
+    - cron: "59 * * * *"  # every hour (UTC)
+  workflow_dispatch:      # optional: allows manual run from Actions tab
+
+jobs:
+  send-verse:
+    runs-on: ubuntu-latest
+
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+      RUN_ONCE: "1"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run script (send one verse)
+        run: |
+          python main.py

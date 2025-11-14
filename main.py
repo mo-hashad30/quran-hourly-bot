@@ -162,9 +162,25 @@ def wait_and_send_forever():
         time.sleep(wait_seconds)
         send_hourly_verse()
 
+def wait_until_next_full_hour():
+    """Sleep until the top of the next hour (UTC)."""
+    now = datetime.datetime.utcnow()
+    next_hour = (now.replace(minute=0, second=0, microsecond=0)
+                 + datetime.timedelta(hours=1))
+    sleep_seconds = (next_hour - now).total_seconds()
+
+    # Safety: only sleep if it's a reasonable value (0–3600 seconds)
+    if 0 < sleep_seconds < 3600:
+        print(f"Waiting {int(sleep_seconds)} seconds until {next_hour} UTC...")
+        time.sleep(sleep_seconds)
+    else:
+        print("Not waiting (sleep_seconds out of range).")
+
+
 if __name__ == "__main__":
-    # If RUN_ONCE is set, just send one verse and exit (for GitHub Actions)
     if os.environ.get("RUN_ONCE") == "1":
+        # For GitHub Actions: wait until next full hour, then send
+        wait_until_next_full_hour()
         send_hourly_verse()
     else:
         print("Web service starting...")

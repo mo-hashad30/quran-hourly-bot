@@ -163,7 +163,11 @@ def wait_and_send_forever():
         send_hourly_verse()
 
 if __name__ == "__main__":
-    print("Web service starting...")
-    thread = threading.Thread(target=wait_and_send_forever, daemon=True)
-    thread.start()
-    run_server()
+    # If RUN_ONCE is set, just send one verse and exit (for GitHub Actions)
+    if os.environ.get("RUN_ONCE") == "1":
+        send_hourly_verse()
+    else:
+        print("Web service starting...")
+        thread = threading.Thread(target=wait_and_send_forever, daemon=True)
+        thread.start()
+        run_server()

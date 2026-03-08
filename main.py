@@ -163,18 +163,16 @@ def wait_and_send_forever():
         send_hourly_verse()
 
 def wait_until_next_full_hour():
-    """Sleep until the top of the next hour (UTC)."""
+    """Sleep until the top of the next hour (UTC), but only if it's close."""
     now = datetime.datetime.utcnow()
     next_hour = (now.replace(minute=0, second=0, microsecond=0)
                  + datetime.timedelta(hours=1))
     sleep_seconds = (next_hour - now).total_seconds()
-
-    # Safety: only sleep if it's a reasonable value (0–3600 seconds)
-    if 0 < sleep_seconds < 3600:
+    if 0 < sleep_seconds <= 300:
         print(f"Waiting {int(sleep_seconds)} seconds until {next_hour} UTC...")
         time.sleep(sleep_seconds)
     else:
-        print("Not waiting (sleep_seconds out of range).")
+        print(f"Action triggered late at {now.strftime('%H:%M:%S')} UTC. Skipping the long wait to save runner minutes!")
 
 
 if __name__ == "__main__":
